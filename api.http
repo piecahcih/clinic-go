@@ -4,6 +4,7 @@
 GET {{base}}/appointments
 
 ### get one appointment
+# GET {{base}}/appointments/f7641ba0-eba2-4b1c-beb7-3cee4fd7bd29
 GET {{base}}/appointments/11111111-1111-1111-1111-111111111111
 
 ### create an appointment
@@ -11,9 +12,10 @@ POST {{base}}/appointments
 Content-Type: application/json
 
 {
-  "doctorId": "d1",
-  "startTime": "2026-09-01T09:00:00Z",
-  "description": "checkup"
+    "patientId": "22222222-2222-2222-2222-222222222222",
+    "doctorId": "33333333-3333-3333-3333-333333333333",
+    "startTime": "2026-09-04T09:00:00Z",
+    "description": "checkup"
 }
 
 ### bad body — should be 422
@@ -23,6 +25,16 @@ Content-Type: application/json
 {
   "doctorId": ""
 }
+
+### cancel an appointment (owned by the mock patient — should succeed)
+# PATCH {{base}}/appointments/11111111-1111-1111-1111-111111111111
+PATCH {{base}}/appointments/02afec80-f9f5-496d-9e90-1ba177e1ac4c
+
+### cancel someone else's appointment — should be 403
+PATCH {{base}}/appointments/66666666-6666-6666-6666-666666666666
+
+### cancel a nonexistent appointment — should be 404
+PATCH {{base}}/appointments/99999999-9999-9999-9999-999999999999
 
 ### doctor slots
 GET {{base}}/doctors/d1/slots?date=2026-09-01
