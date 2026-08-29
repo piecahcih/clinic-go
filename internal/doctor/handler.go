@@ -23,9 +23,10 @@ func (h *Handler) DoctorInfo(ctx fiber.Ctx) error {
 			JSON(fiber.Map{"error": "invalid doctor id"})
 	}
 
-	role, _ := ctx.Locals("role").(string)
+	// role, _ := ctx.Locals("role").(string)
 
-	doc, err := h.svc.DoctorInfo(ctx.Context(), id, role)
+	// doc, err := h.svc.DoctorInfo(ctx.Context(), id, role)
+	doc, err := h.svc.DoctorInfo(ctx.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):

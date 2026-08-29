@@ -15,15 +15,8 @@ func NewService(r Repository) *Service {
 	return &Service{repo: r}
 }
 
-func (s *Service) DoctorInfo(ctx context.Context, id uuid.UUID, role string) (*User, error) {
-	if role != "doctor" {
-		return nil, ErrNotADoctor
-	}
-	u, err := s.repo.DoctorInfo(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
+func (s *Service) DoctorInfo(ctx context.Context, id uuid.UUID) (*User, error) {
+	return s.repo.DoctorInfo(ctx, id)
 }
 
 // Thailand has no DST, so a fixed offset is safe and avoids depending on the
