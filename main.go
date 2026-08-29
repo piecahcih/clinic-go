@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -12,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/joho/godotenv"
 	"github.com/piecahcih/clinic-go/internal/appointment"
+	"github.com/piecahcih/clinic-go/internal/auth"
 	"github.com/piecahcih/clinic-go/internal/db"
 	"github.com/piecahcih/clinic-go/internal/doctor"
 	"github.com/piecahcih/clinic-go/internal/httperr"
@@ -49,18 +52,35 @@ func main() {
 
 	api := app.Group("/api/v1")
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is not set")
+	}
+	jwtTTLMinutes, err := strconv.Atoi(os.Getenv("JWT_TTL_MINUTES"))
+	if err != nil {
+		log.Fatalf("JWT_TTL_MINUTES: %v", err)
+	}
+
+	authRepo := auth.NewPostgresRepo(database)
+	authSvc := auth.NewService(authRepo, jwtSecret, time.Duration(jwtTTLMinutes)*time.Minute)
+	authH := auth.NewHandle(authSvc)
+
+	auth.RegisterRoutes(api, authH)
+
+	authMW := middleware.Authenticate(jwtSecret)
+
 	// apptRepo := appointment.NewMemoryRepo()
 	apptRepo := appointment.NewPostgresRepo(database)
 	apptSvc := appointment.NewService(apptRepo)
 	apptH := appointment.NewHandler(apptSvc)
 
-	appointment.RegisterRoutes(api, apptH)
+	appointment.RegisterRoutes(api, apptH, authMW)
 
 	docRepo := doctor.NewPostgresRepo(database)
 	docSvc := doctor.NewService(docRepo)
 	docH := doctor.NewHandler(docSvc)
 
-	doctor.RegisterRoutes(api, docH)
+	doctor.RegisterRoutes(api, docH, authMW)
 
 	// app.Get("/", func(c fiber.Ctx) error {
 	// 	return c.SendString("test")
