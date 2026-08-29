@@ -36,5 +36,11 @@ PATCH {{base}}/appointments/66666666-6666-6666-6666-666666666666
 ### cancel a nonexistent appointment — should be 404
 PATCH {{base}}/appointments/99999999-9999-9999-9999-999999999999
 
+### get doctor info
+GET {{base}}/doctor/33333333-3333-3333-3333-333333333333
+
+### get nonexistent doctor — should be 404
+GET {{base}}/doctor/99999999-9999-9999-9999-999999999999
+
 ### doctor slots
-GET {{base}}/doctors/d1/slots?date=2026-09-01
+GET {{base}}/doctor/33333333-3333-3333-3333-333333333333/slots?date=2026-09-01

@@ -1,16 +1,15 @@
 package doctor
 
-import "github.com/gofiber/fiber/v3"
+import (
+	"github.com/gofiber/fiber/v3"
+	"github.com/piecahcih/clinic-go/internal/middleware"
+)
 
-func RegisterRoutes(r fiber.Router) {
+func RegisterRoutes(r fiber.Router, h *Handler) {
 	g := r.Group("/doctor")
 
 	// doctor details
-	g.Get("/:id", func(c fiber.Ctx) error {
-		return c.SendString("GET /doctor/:id")
-	})
+	g.Get("/:id", middleware.MockAuthCheck(), h.DoctorInfo)
 	// available booking times
-	g.Get("/:id/slots", func(c fiber.Ctx) error {
-		return c.SendString("GET /doctor/:id/slots")
-	})
+	g.Get("/:id/slots", h.DoctorSlots)
 }

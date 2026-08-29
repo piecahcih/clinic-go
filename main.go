@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/piecahcih/clinic-go/internal/appointment"
 	"github.com/piecahcih/clinic-go/internal/db"
+	"github.com/piecahcih/clinic-go/internal/doctor"
 	"github.com/piecahcih/clinic-go/internal/httperr"
 	"github.com/piecahcih/clinic-go/internal/middleware"
 )
@@ -54,6 +55,12 @@ func main() {
 	apptH := appointment.NewHandler(apptSvc)
 
 	appointment.RegisterRoutes(api, apptH)
+
+	docRepo := doctor.NewPostgresRepo(database)
+	docSvc := doctor.NewService(docRepo)
+	docH := doctor.NewHandler(docSvc)
+
+	doctor.RegisterRoutes(api, docH)
 
 	// app.Get("/", func(c fiber.Ctx) error {
 	// 	return c.SendString("test")
