@@ -48,7 +48,10 @@ func main() {
 	app.Use(requestid.New())
 	app.Use(logger.New())
 	app.Use(recover.New())
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowCredentials: true,
+	}))
 
 	api := app.Group("/api/v1")
 
