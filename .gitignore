@@ -2,3 +2,4 @@ go-clinic-api
 go-clinic-api.exe
 .env
 tmp/
+token.md

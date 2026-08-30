@@ -44,7 +44,7 @@ func Authenticate(secret string) fiber.Handler {
 		}
 		role, _ := claims["role"].(string)
 
-		c.Locals("patientID", userID)
+		c.Locals("userID", userID)
 		c.Locals("role", role)
 		return c.Next()
 	}

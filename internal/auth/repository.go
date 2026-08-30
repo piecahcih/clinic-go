@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
@@ -62,8 +63,65 @@ func (r *postgresRepo) FindUserByEmail(ctx context.Context, email string) (*User
 	return &u, nil
 }
 
+func (r *postgresRepo) FindUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	var u User
+
+	err := r.db.GetContext(ctx, &u, `
+		SELECT id, first_name, last_name, birth_date, gender, email, password_hash, role, created_at
+		FROM users
+		WHERE id = $1`, id)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, fmt.Errorf("find user by id %s: %w", id, err)
+	}
+	return &u, nil
+}
+
+func (r *postgresRepo) CreateSession(ctx context.Context, s Session) error {
+	_, err := r.db.ExecContext(ctx, `
+	INSERT INTO sessions (token, user_id, expires_at)
+	VALUES ($1, $2, $3)`,
+		s.TokenHash, s.UserID, s.ExpiresAt)
+	if err != nil {
+		return fmt.Errorf("create session: %w", err)
+	}
+	return nil
+}
+
+func (r *postgresRepo) FindSession(ctx context.Context, hash string) (*Session, error) {
+	var s Session
+	err := r.db.GetContext(ctx, &s, `
+		SELECT token, user_id, expires_at, created_at FROM sessions
+		WHERE token = $1`, hash)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrSessionInvalid
+		}
+		return nil, fmt.Errorf("find session: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *postgresRepo) DeleteSession(ctx context.Context, hash string) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM sessions WHERE token = $1`, hash)
+	if err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+	return nil
+}
+
 type Repository interface {
 	CreateUser(ctx context.Context, u *User) error
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
+	FindUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
+
+	CreateSession(ctx context.Context, s Session) error
+	FindSession(ctx context.Context, tokenHash string) (*Session, error)
+	DeleteSession(ctx context.Context, tokenHash string) error
 }

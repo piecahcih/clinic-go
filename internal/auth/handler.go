@@ -8,7 +8,9 @@ import (
 )
 
 type Handler struct {
-	svc *Service
+	svc           *Service
+	refreshTTL    time.Duration
+	secureCookies bool
 }
 
 type RegisterDTO struct {
@@ -26,8 +28,34 @@ type LoginDTO struct {
 	Password string `json:"password"`
 }
 
-func NewHandle(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandle(svc *Service, refreshTTL time.Duration, secureCookies bool) *Handler {
+	return &Handler{svc: svc, refreshTTL: refreshTTL, secureCookies: secureCookies}
+}
+
+const refreshCookie = "refresh_token"
+
+func (h *Handler) setRefreshCookie(c fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     refreshCookie,
+		Value:    token,
+		HTTPOnly: true,
+		Secure:   h.secureCookies, // false on localhost http
+		SameSite: "Lax",
+		Path:     "/api/v1/auth",
+		Expires:  time.Now().Add(h.refreshTTL),
+	})
+}
+
+func (h *Handler) clearRefreshCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     refreshCookie,
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   h.secureCookies,
+		SameSite: "Lax",
+		Path:     "/api/v1/auth",
+		Expires:  time.Now().Add(-time.Hour), // past = delete
+	})
 }
 
 func (h *Handler) Register(c fiber.Ctx) error {
@@ -80,7 +108,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 			JSON(fiber.Map{"error": "email and password are required"})
 	}
 
-	token, err := h.svc.Login(c.Context(), req.Email, req.Password)
+	access, refresh, err := h.svc.Login(c.Context(), req.Email, req.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCredentials):
@@ -92,5 +120,43 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(fiber.Map{"token": token})
+	h.setRefreshCookie(c, refresh)
+	return c.JSON(fiber.Map{"accessToken": access})
+}
+
+func (h *Handler) Refresh(c fiber.Ctx) error {
+	rawRefresh := c.Cookies(refreshCookie)
+	if rawRefresh == "" {
+		return c.Status(fiber.StatusUnauthorized).
+			JSON(fiber.Map{"error": "missing refresh token"})
+	}
+
+	access, refresh, err := h.svc.Refresh(c.Context(), rawRefresh)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrSessionInvalid):
+			h.clearRefreshCookie(c)
+			return c.Status(fiber.StatusUnauthorized).
+				JSON(fiber.Map{"error": err.Error()})
+		default:
+			return c.Status(fiber.StatusInternalServerError).
+				JSON(fiber.Map{"error": "internal error"})
+		}
+	}
+
+	h.setRefreshCookie(c, refresh)
+	return c.JSON(fiber.Map{"accessToken": access})
+}
+
+func (h *Handler) Logout(c fiber.Ctx) error {
+	rawRefresh := c.Cookies(refreshCookie)
+	if rawRefresh != "" {
+		if err := h.svc.Logout(c.Context(), rawRefresh); err != nil {
+			return c.Status(fiber.StatusInternalServerError).
+				JSON(fiber.Map{"error": "internal error"})
+		}
+	}
+
+	h.clearRefreshCookie(c)
+	return c.SendStatus(fiber.StatusNoContent)
 }

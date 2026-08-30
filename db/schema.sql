@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 CREATE OR REPLACE FUNCTION appointment_slot(start_time TIMESTAMPTZ)

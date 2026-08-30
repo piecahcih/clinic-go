@@ -9,4 +9,6 @@ func RegisterRoutes(r fiber.Router, h *Handler) {
 
 	g.Post("/register", h.Register)
 	g.Post("/login", h.Login)
+	g.Post("/refresh", h.Refresh)
+	g.Post("/logout", h.Logout)
 }

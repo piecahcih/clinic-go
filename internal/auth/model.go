@@ -19,7 +19,15 @@ type User struct {
 	CreatedAt    time.Time `json:"createdAt"     db:"created_at"`
 }
 
+type Session struct {
+	TokenHash string    `db:"token"`
+	UserID    uuid.UUID `db:"user_id"`
+	ExpiresAt time.Time `db:"expires_at"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
 var (
 	ErrEmailTaken         = errors.New("email already registered")
 	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrSessionInvalid     = errors.New("session invalid or expired")
 )

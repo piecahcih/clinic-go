@@ -46,6 +46,15 @@ Content-Type: application/json
     "password": "wrong-password"
 }
 
+### 4. refresh — 200, new token, NEW cookie value
+POST {{base}}/auth/refresh
+
+### 5. logout — 204
+POST {{base}}/auth/logout
+
+### 6. refresh again — 401
+POST {{base}}/auth/refresh
+
 
 #
 #APPOINTMENT

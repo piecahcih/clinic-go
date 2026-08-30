@@ -60,10 +60,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("JWT_TTL_MINUTES: %v", err)
 	}
+	refreshTTLDays, err := strconv.Atoi(os.Getenv("REFRESH_TTL_DAYS"))
+	if err != nil {
+		log.Fatalf("REFRESH_TTL_DAYS: %v", err)
+	}
+	refreshTTL := time.Duration(refreshTTLDays) * 24 * time.Hour
+	secureCookies, _ := strconv.ParseBool(os.Getenv("COOKIE_SECURE")) // defaults false, e.g. for local http
 
 	authRepo := auth.NewPostgresRepo(database)
-	authSvc := auth.NewService(authRepo, jwtSecret, time.Duration(jwtTTLMinutes)*time.Minute)
-	authH := auth.NewHandle(authSvc)
+	authSvc := auth.NewService(authRepo, jwtSecret, time.Duration(jwtTTLMinutes)*time.Minute, refreshTTL)
+	authH := auth.NewHandle(authSvc, refreshTTL, secureCookies)
 
 	auth.RegisterRoutes(api, authH)
 

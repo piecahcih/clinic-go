@@ -29,13 +29,13 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 			JSON(fiber.Map{"error": "invalid appointment id"})
 	}
 
-	callerPatientID, ok := c.Locals("patientID").(uuid.UUID)
+	callerID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).
 			JSON(fiber.Map{"error": "unauthorized"})
 	}
 
-	appt, err := h.svc.GetByID(c.Context(), id, callerPatientID)
+	appt, err := h.svc.GetByID(c.Context(), id, callerID)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):
@@ -54,7 +54,7 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 }
 
 func (h *Handler) AllMyAppointment(c fiber.Ctx) error {
-	callerID, ok := c.Locals("patientID").(uuid.UUID)
+	callerID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).
 			JSON(fiber.Map{"error": "unauthorized"})
@@ -76,7 +76,7 @@ func (h *Handler) AddAppointment(c fiber.Ctx) error {
 			JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	callerPatientID, ok := c.Locals("patientID").(uuid.UUID)
+	callerID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).
 			JSON(fiber.Map{"error": "unauthorized"})
@@ -89,7 +89,7 @@ func (h *Handler) AddAppointment(c fiber.Ctx) error {
 	}
 
 	appt, err := h.svc.AddAppointment(c.Context(), Appointment{
-		PatientID:   callerPatientID,
+		PatientID:   callerID,
 		DoctorID:    req.DoctorID,
 		StartTime:   req.StartTime,
 		Description: req.Description,
@@ -120,13 +120,13 @@ func (h *Handler) CancelAppointment(c fiber.Ctx) error {
 			JSON(fiber.Map{"error": "invalid appointment id"})
 	}
 
-	callerPatientID, ok := c.Locals("patientID").(uuid.UUID)
+	callerID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).
 			JSON(fiber.Map{"error": "unauthorized"})
 	}
 
-	appt, err := h.svc.CancelAppointment(c.Context(), id, callerPatientID)
+	appt, err := h.svc.CancelAppointment(c.Context(), id, callerID)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):
