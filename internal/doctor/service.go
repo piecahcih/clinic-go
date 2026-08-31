@@ -54,3 +54,7 @@ func (s *Service) AvailableSlots(ctx context.Context, doctorID uuid.UUID, day ti
 	}
 	return slots, nil
 }
+
+func (s *Service) ListDoctors(ctx context.Context) ([]User, error) {
+	return s.repo.ListDoctors(ctx)
+}

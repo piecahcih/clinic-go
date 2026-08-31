@@ -68,3 +68,12 @@ func (h *Handler) DoctorSlots(c fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"doctorId": id, "date": dateStr, "slots": localSlots})
 }
+
+func (h *Handler) ListDoctors(ctx fiber.Ctx) error {
+	docs, err := h.svc.ListDoctors(ctx.Context())
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": "internal error"})
+	}
+	return ctx.JSON(docs)
+}

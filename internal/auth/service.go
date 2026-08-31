@@ -53,10 +53,13 @@ func (s *Service) Register(ctx context.Context, u User, password string) (*User,
 
 func (s *Service) signJWT(u *User) (string, error) {
 	claims := jwt.MapClaims{
-		"sub":  u.ID.String(),
-		"role": u.Role,
-		"exp":  time.Now().Add(s.ttl).Unix(),
-		"iat":  time.Now().Unix(),
+		"sub":       u.ID.String(),
+		"role":      u.Role,
+		"firstName": u.FirstName,
+		"lastName":  u.LastName,
+		"email":     u.Email,
+		"exp":       time.Now().Add(s.ttl).Unix(),
+		"iat":       time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

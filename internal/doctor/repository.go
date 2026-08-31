@@ -55,7 +55,21 @@ func (r *postgresRepo) BookedSlots(ctx context.Context, doctorID uuid.UUID, day 
 	return times, nil
 }
 
+func (r *postgresRepo) ListDoctors(ctx context.Context) ([]User, error) {
+	var doctors []User
+	err := r.db.SelectContext(ctx, &doctors, `
+		SELECT id, first_name, last_name, role
+		FROM users
+		WHERE role = 'doctor'
+		ORDER BY last_name, first_name`)
+	if err != nil {
+		return nil, fmt.Errorf("list doctors: %w", err)
+	}
+	return doctors, nil
+}
+
 type Repository interface {
 	DoctorInfo(ctx context.Context, id uuid.UUID) (*User, error)
 	BookedSlots(ctx context.Context, doctorID uuid.UUID, day time.Time) ([]time.Time, error)
+	ListDoctors(ctx context.Context) ([]User, error)
 }

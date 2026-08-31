@@ -1,5 +1,5 @@
 @base = http://localhost:3000/api/v1
-@token = {{login.response.body.$.token}}
+@token = {{login.response.body.$.accessToken}}
 
 ### register a new patient
 POST {{base}}/auth/register
@@ -33,9 +33,14 @@ POST {{base}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "Neer.doctor@example.com",
+    "email": "peach@example.com",
     "password": "123456"
 }
+
+# {
+#     "email": "Neer.doctor@example.com",
+#     "password": "123456"
+# }
 
 ### login with wrong password — should be 401
 POST {{base}}/auth/login
@@ -100,6 +105,14 @@ Authorization: Bearer {{token}}
 
 ### cancel a nonexistent appointment — should be 404
 PATCH {{base}}/appointments/99999999-9999-9999-9999-999999999999
+Authorization: Bearer {{token}}
+
+
+#
+#DOCTOR
+#
+### get doctors
+GET {{base}}/doctor
 Authorization: Bearer {{token}}
 
 ### get doctor info

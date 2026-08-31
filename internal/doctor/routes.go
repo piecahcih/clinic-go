@@ -7,6 +7,7 @@ import (
 func RegisterRoutes(r fiber.Router, h *Handler, authMW fiber.Handler) {
 	g := r.Group("/doctor")
 
+	g.Get("/", authMW, h.ListDoctors)
 	// doctor details
 	g.Get("/:id", authMW, h.DoctorInfo)
 	// available booking times
