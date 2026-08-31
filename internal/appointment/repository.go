@@ -95,9 +95,21 @@ func (r *postgresRepo) CancelAppointment(ctx context.Context, id uuid.UUID) (*Ap
 	return &a, nil
 }
 
+func (r *postgresRepo) MarkNoShows(ctx context.Context) (int64, error) {
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE appointments
+		SET status = 'no_show'
+		WHERE status = 'booked' AND start_time < now()`)
+	if err != nil {
+		return 0, fmt.Errorf("mark no-shows: %w", err)
+	}
+	return res.RowsAffected()
+}
+
 type Repository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Appointment, error)
 	AllMyAppointment(ctx context.Context, userID uuid.UUID, role string) ([]Appointment, error)
 	AddAppointment(ctx context.Context, a Appointment) (*Appointment, error)
 	CancelAppointment(ctx context.Context, id uuid.UUID) (*Appointment, error)
+	MarkNoShows(ctx context.Context) (int64, error)
 }

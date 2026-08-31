@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -25,6 +29,8 @@ func main() {
 	_ = godotenv.Load()
 
 	database, err := db.Connect(os.Getenv("DATABASE_URL"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +53,7 @@ func main() {
 
 	app.Use(requestid.New())
 	app.Use(logger.New())
-	app.Use(recover.New())
+	app.Use(recover.New()) //panic recover
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowCredentials: true,
@@ -81,6 +87,7 @@ func main() {
 	// apptRepo := appointment.NewMemoryRepo()
 	apptRepo := appointment.NewPostgresRepo(database)
 	apptSvc := appointment.NewService(apptRepo)
+	go appointment.RunNoShowWorker(ctx, apptRepo, 15*time.Minute)
 	apptH := appointment.NewHandler(apptSvc)
 
 	appointment.RegisterRoutes(api, apptH, authMW)
@@ -91,10 +98,6 @@ func main() {
 
 	doctor.RegisterRoutes(api, docH, authMW)
 
-	// app.Get("/", func(c fiber.Ctx) error {
-	// 	return c.SendString("test")
-	// })
-
 	app.Use(middleware.NotFound())
 
 	port := os.Getenv("PORT")
@@ -102,5 +105,32 @@ func main() {
 		port = "3000"
 	}
 
-	log.Fatal(app.Listen(":3000"))
+	// The thing we just add is a handler foe server quit, error.
+	// We added a handler so that when the OS sends a termination signal
+	// whether from a developer's Ctrl+C or a deploy platform's shutdown request
+	// our program gets a chance to react instead of dying instantly.
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- app.Listen(fmt.Sprintf(":%s", port))
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErr:
+		log.Fatalf("server error: %v", err)
+	case sig := <-quit:
+		log.Printf("received %v, starting graceful shutdown", sig)
+	}
+
+	// select waits on two channels: if the server itself fails to start, we log the error and exit hard (nothing to gracefully close, since it never opened).
+	// If a termination signal arrives instead, we log that we're shutting down gracefully and give in-flight requests up to 10 seconds to finish before the process exits."
+
+	cancel()
+
+	if err := app.ShutdownWithTimeout(10 * time.Second); err != nil {
+		log.Printf("graceful shutdown error: %v", err)
+	}
 }
